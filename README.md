@@ -2,7 +2,7 @@
 
 Fusion add-in that builds printable threads with a custom profile: fasteners and pipe threads, male and female, any pitch, angle and groove depth, with FDM clearance built in.
 
-> **Status: early development.** The add-in has a working dialog that builds a male thread or a female test bushing at the origin. Placing threads on existing geometry is next. See [Roadmap](#roadmap).
+> **Status: early development.** The add-in has a working dialog: pick a plane or face, type the measurements, and it builds the thread as a new body, joins a male thread to your part, or cuts a threaded hole into it. See [Roadmap](#roadmap).
 
 ## Why
 
@@ -40,13 +40,14 @@ Sweeping a profile along a single helix in Fusion self-intersects after the firs
 
 ## Using the dialog
 
-1. Choose male or female.
+1. Optionally select a planar face or construction plane, and a point on it. With a face and no point, the thread is centred on the face. With no selection it is built at the origin along Z.
+1. Choose male or female. With a face selected and *join / drill into the part* ticked, a male thread is joined to that body and a female thread is cut into it as a threaded hole with a countersink.
 2. Pick a standard (metric, G pipe, UNC) to fill in the numbers, or leave it on free and type your own measurements.
 3. Set crest diameter, root diameter, pitch and flank angle. Presets hold the nominal male values.
 4. Set length, radial clearance, number of starts, handedness and chamfer.
 5. Read the info box: groove depth, crest and root flats, estimated time and printing warnings. OK is disabled when the profile is impossible.
 
-The thread is built at the origin of the active component, along Z. The female option builds a test bushing with the outer diameter you set.
+Without a face, the female option builds a test bushing with the outer diameter you set.
 
 The dialog text is in Spanish for now.
 
@@ -65,14 +66,15 @@ Units are millimetres. Function and parameter names are currently in Spanish (`c
 ## Known limits
 
 - **Slow.** About 1.4 s per thread turn. A long fine thread can take over a minute.
-- The female helper only makes a test bushing. Cutting a thread into an existing body or onto an existing cylindrical face is not done yet.
+- Threading an existing cylindrical face (a shaft or a plain hole already in the model) is not done yet. Use a planar face instead.
+- No preview before you press OK.
 - No tapered threads yet (BSPT, NPT).
 - Crests and roots are flat. Rounded Whitworth crests are not modelled.
 
 ## Roadmap
 
 1. ~~Core: custom-profile male and female thread on a plane.~~ Done.
-2. Thread an existing cylindrical face, and cut a female thread inside an existing body.
+2. ~~Place on a plane or face, join to a body, cut a threaded hole.~~ Done. Still to do: thread an existing cylindrical face.
 3. Recognise the thread from measurements (metric, UNC/UNF, BSW, BSP) and warn when nozzle or layer height cannot resolve the pitch.
 4. Pipe threads: parallel (G) and tapered (BSPT, NPT).
 5. Complete parts (hex nut, bolt, fittings), a clearance calibration test, in-dialog help, English UI.

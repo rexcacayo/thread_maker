@@ -19,6 +19,12 @@ Other things to check:
 - Count the starts at the end of the thread. Caps and jars usually have more than one.
 - Measure the diameter at two points along the thread. If it changes, the thread is tapered.
 
+## Identifying an unknown female thread
+
+When you cannot measure the root, print a tester instead of the whole part: a few short male stubs (a knob plus 4.5 mm of thread), each with a candidate thread and a number of notches to tell them apart. It prints in about 20 minutes.
+
+Example: an airbrush air inlet that downloadable models describe as G 1/16. The hole measured 6.15 mm with calipers, which is the minor diameter of M7 x 0.75, not G 1/16 (6.56 mm). A tester with both candidates confirmed M7 x 0.75. The printed male that fitted perfectly was 6.85 mm crest, 5.95 mm root (PLA, 0.4 mm nozzle, 0.12 mm layers).
+
 ## Clearance
 
 - Calibrate the printer first, so a 10 mm cylinder measures 10 mm. Then the thread clearance is a small, nearly constant number.
