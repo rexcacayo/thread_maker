@@ -259,8 +259,10 @@ def hembra_en(comp, destino, cresta_d, fondo_d, paso, angulo, largo, holgura=0.0
     pf = perfil(cresta_d, fondo_d, paso, angulo, holgura, hembra=True)
     pm = perfil(cresta_d + 2 * holgura, fondo_d + 2 * holgura, paso, angulo, 0.0, hembra=False)
     ops = adsk.fusion.FeatureOperations
-    macho = _cilindro(comp, pm["r_boca"], -sobre, largo + extra, 0.0, ops.NewBodyFeatureOperation).bodies.item(0)
-    cortar_rosca(comp, macho, pm, -sobre, largo, entradas, izquierda, 0.0, True, extra <= 0)
+    macho = _cilindro(comp, pm["r_boca"], -sobre, largo, 0.0, ops.NewBodyFeatureOperation).bodies.item(0)
+    cortar_rosca(comp, macho, pm, -sobre, largo, entradas, izquierda, 0.0, True, True)
+    if extra > 0:                                     # el tramo extra va al diametro del agujero, sin filete
+        _cilindro(comp, pm["r_fondo"], largo - 0.2, largo + extra, 0.0, ops.JoinFeatureOperation, [macho])
     if chaflan:
         # avellanado a 45 grados: del diametro mayor en la cara al agujero
         tm = adsk.fusion.TemporaryBRepManager.get()
