@@ -40,17 +40,34 @@ Sweeping a profile along a single helix in Fusion self-intersects after the firs
 
 ## Using the dialog
 
-It works like Fusion's Coil command:
+Placement works like Fusion's Coil command, and it also understands existing geometry.
 
-1. Select a planar face or a construction plane. The thread comes out perpendicular to it, at the centre of the face. Untick *centre on the face* to start it where you clicked, or pick a vertex or sketch point.
-2. Drag the arrow in the viewport to set the length. Drag it to the other side to flip the direction.
-3. With no selection, the thread is built at the origin along the axis you choose (X, Y or Z).
-4. Choose male or female. With a face selected and *join / drill into the part* ticked, a male thread is joined to that body and a female thread is cut into it as a threaded hole with a countersink. Otherwise you get a new body (for female, a test bushing with the outer diameter you set).
-5. Pick a standard (metric, G pipe, UNC) to fill in the numbers, or leave it on free and type your own crest diameter, root diameter, pitch and flank angle. Presets hold the nominal male values.
-6. Set radial clearance, number of starts, handedness and chamfer.
-7. Read the info box: what will be built, groove depth, crest and root flats, estimated time and printing warnings. OK is disabled when the profile is impossible.
+**Where**
 
-The preview is a plain cylinder with the diameter and length of the thread. The real thread is computed when you press OK, because it takes several seconds.
+- **Planar face or construction plane.** The thread comes out perpendicular to it, at the centre of the face. Untick *centre on the face* to start it where you clicked.
+- **Cylindrical face or circular edge of a shaft.** The thread is carved into the existing shaft, starting at the end nearest to your click. Diameter and length are taken from the model. Bores and other features of the shaft are kept.
+- **Cylindrical face or circular edge of a hole.** The thread is carved into the existing hole.
+- **Curved face.** The thread comes out normal to the surface at the point you clicked.
+- **Several points.** With a planar face selected, pick vertices, sketch points or circular edges: one thread is made at each. Circular edges of existing holes are threaded in place.
+- **Nothing selected.** The thread is built at the origin along X, Y or Z.
+
+**Length and direction**
+
+Drag the arrow in the viewport to set the thread length. Drag it to the other side to flip the direction.
+
+**Options**
+
+- Male or female. With a body selected and *join / drill into the part* ticked, a male thread is joined to it and a female thread is cut into it as a threaded hole with a countersink. Otherwise you get a new body (for female, a test bushing).
+- Standard (metric, G pipe, UNC) or free measurements: crest diameter, root diameter, pitch and flank angle. Presets hold the nominal male values.
+- *Use the selected diameter*: copies the diameter and length of the shaft, hole or edge you picked.
+- *Smooth shank / extra hole depth*: for a male thread, an unthreaded length between the part and the thread; for a threaded hole, plain hole depth beyond the thread.
+- Radial clearance, number of starts, handedness and chamfer.
+
+**Info box.** Says what will be built, groove depth, crest and root flats, estimated time and printing warnings. OK is disabled when the profile is impossible.
+
+**Preview.** A plain cylinder with the diameter and length of the thread at each position. The real thread is computed when you press OK, because it takes several seconds.
+
+**Fixing a mistake.** The whole thread is one undo step and one collapsed group in the timeline. The dialog remembers the last values, so undo, reopen, change the number and press OK.
 
 The dialog text is in Spanish for now.
 
@@ -69,15 +86,17 @@ Units are millimetres. Function and parameter names are currently in Spanish (`c
 ## Known limits
 
 - **Slow.** About 1.4 s per thread turn. A long fine thread can take over a minute.
-- Threading an existing cylindrical face (a shaft or a plain hole already in the model) is not done yet. Use a planar face instead.
+- **Bodies inside a moved or rotated component are not supported yet.** The add-in stops with a message. Thread the part in the root component, or before moving the component.
+- A thread cannot be edited afterwards as a single feature. Undo and redo it; the dialog keeps your values.
 - The preview is a plain cylinder, not the thread itself.
+- On curved faces the thread base is flat, so the countersink and the joint follow the tangent plane, not the surface.
 - No tapered threads yet (BSPT, NPT).
 - Crests and roots are flat. Rounded Whitworth crests are not modelled.
 
 ## Roadmap
 
 1. ~~Core: custom-profile male and female thread on a plane.~~ Done.
-2. ~~Place on a plane or face, join to a body, cut a threaded hole.~~ Done. Still to do: thread an existing cylindrical face.
+2. ~~Place on a plane or face, join to a body, cut a threaded hole, thread existing shafts and holes, several positions at once.~~ Done. Still to do: bodies inside moved components.
 3. Recognise the thread from measurements (metric, UNC/UNF, BSW, BSP) and warn when nozzle or layer height cannot resolve the pitch.
 4. Pipe threads: parallel (G) and tapered (BSPT, NPT).
 5. Complete parts (hex nut, bolt, fittings), a clearance calibration test, in-dialog help, English UI.

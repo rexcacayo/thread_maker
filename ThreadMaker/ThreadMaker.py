@@ -398,7 +398,13 @@ def _a_local(design, col):
     m = None
     if occ:
         m = (occ.transform2 if hasattr(occ, "transform2") else occ.transform).copy()
-        m.invert()
+        if m.isEqualTo(adsk.core.Matrix3D.create()):
+            return comp, cuerpo, None
+        # Probado en Fusion: dentro de un componente movido el corte no llega a la pieza y no da error.
+        # Hasta resolverlo se avisa, en vez de dejar la pieza sin rosca sin decir nada.
+        raise rosca_core.RoscaError(
+            "La pieza está dentro de un componente movido o girado. Todavía no está soportado: "
+            "haz la rosca con la pieza en el componente raíz o antes de mover el componente.")
     return comp, cuerpo, m
 
 
@@ -633,6 +639,9 @@ class _Ejecutar(adsk.core.CommandEventHandler):
             v = _leer(ins, col)
             _guardar_memo(ins)
             _construir(design, v, col)
+        except rosca_core.RoscaError as e:
+            args.executeFailed = True
+            args.executeFailedMessage = "Thread Maker: %s" % e
         except Exception:  # noqa: BLE001
             args.executeFailed = True
             args.executeFailedMessage = "Thread Maker no pudo generar la rosca:<br>" + traceback.format_exc().splitlines()[-1]
