@@ -40,14 +40,17 @@ Sweeping a profile along a single helix in Fusion self-intersects after the firs
 
 ## Using the dialog
 
-1. Optionally select a planar face or construction plane, and a point on it. With a face and no point, the thread is centred on the face. With no selection it is built at the origin along Z.
-1. Choose male or female. With a face selected and *join / drill into the part* ticked, a male thread is joined to that body and a female thread is cut into it as a threaded hole with a countersink.
-2. Pick a standard (metric, G pipe, UNC) to fill in the numbers, or leave it on free and type your own measurements.
-3. Set crest diameter, root diameter, pitch and flank angle. Presets hold the nominal male values.
-4. Set length, radial clearance, number of starts, handedness and chamfer.
-5. Read the info box: groove depth, crest and root flats, estimated time and printing warnings. OK is disabled when the profile is impossible.
+It works like Fusion's Coil command:
 
-Without a face, the female option builds a test bushing with the outer diameter you set.
+1. Select a planar face or a construction plane. The thread comes out perpendicular to it, at the centre of the face. Untick *centre on the face* to start it where you clicked, or pick a vertex or sketch point.
+2. Drag the arrow in the viewport to set the length. Drag it to the other side to flip the direction.
+3. With no selection, the thread is built at the origin along the axis you choose (X, Y or Z).
+4. Choose male or female. With a face selected and *join / drill into the part* ticked, a male thread is joined to that body and a female thread is cut into it as a threaded hole with a countersink. Otherwise you get a new body (for female, a test bushing with the outer diameter you set).
+5. Pick a standard (metric, G pipe, UNC) to fill in the numbers, or leave it on free and type your own crest diameter, root diameter, pitch and flank angle. Presets hold the nominal male values.
+6. Set radial clearance, number of starts, handedness and chamfer.
+7. Read the info box: what will be built, groove depth, crest and root flats, estimated time and printing warnings. OK is disabled when the profile is impossible.
+
+The preview is a plain cylinder with the diameter and length of the thread. The real thread is computed when you press OK, because it takes several seconds.
 
 The dialog text is in Spanish for now.
 
@@ -67,7 +70,7 @@ Units are millimetres. Function and parameter names are currently in Spanish (`c
 
 - **Slow.** About 1.4 s per thread turn. A long fine thread can take over a minute.
 - Threading an existing cylindrical face (a shaft or a plain hole already in the model) is not done yet. Use a planar face instead.
-- No preview before you press OK.
+- The preview is a plain cylinder, not the thread itself.
 - No tapered threads yet (BSPT, NPT).
 - Crests and roots are flat. Rounded Whitworth crests are not modelled.
 
