@@ -262,7 +262,8 @@ def hembra_en(comp, destino, cresta_d, fondo_d, paso, angulo, largo, holgura=0.0
     macho = _cilindro(comp, pm["r_boca"], -sobre, largo, 0.0, ops.NewBodyFeatureOperation).bodies.item(0)
     cortar_rosca(comp, macho, pm, -sobre, largo, entradas, izquierda, 0.0, True, True)
     if extra > 0:                                     # el tramo extra va al diametro del agujero, sin filete
-        _cilindro(comp, pm["r_fondo"], largo - 0.2, largo + extra, 0.0, ops.JoinFeatureOperation, [macho])
+        # 0,02 mm mas de radio: si coincide con el fondo del filete, la union deja esquirlas sueltas
+        _cilindro(comp, pm["r_fondo"] + 0.02, largo - 0.2, largo + extra, 0.0, ops.JoinFeatureOperation, [macho])
     if chaflan:
         # avellanado a 45 grados: del diametro mayor en la cara al agujero
         tm = adsk.fusion.TemporaryBRepManager.get()
