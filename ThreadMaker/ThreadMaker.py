@@ -161,8 +161,10 @@ def _resumen(v):
         avisos.append("Rosca pequeña: para piezas con carga, mejor inserto o tuerca embutida.")
     if pf["plano_cresta"] < 0.15:
         avisos.append("Cresta muy afilada: al imprimir saldrá redondeada.")
-    if v["holgura"] == 0 and not v["hembra"]:
+    if v["holgura"] == 0:
         avisos.append("Sin holgura: correcto contra rosca metálica; entre impresas pon 0,2.")
+    elif v["hembra"]:
+        avisos.append("Hembra sobre macho metálico: prueba primero con holgura 0.")
     if avisos:
         lineas.append("<br><b>Avisos</b>")
         lineas.extend("• " + a for a in avisos)

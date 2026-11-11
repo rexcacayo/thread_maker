@@ -29,7 +29,7 @@ Example: an airbrush air inlet that downloadable models describe as G 1/16. The 
 
 - Calibrate the printer first, so a 10 mm cylinder measures 10 mm. Then the thread clearance is a small, nearly constant number.
 - Printed against printed: start at 0.2 to 0.25 mm radial.
-- Printed female on a metal male (G 1/16, 28 TPI, PLA, 0.4 mm nozzle, 0.12 mm layers): fitted well with no added clearance.
+- Printed female on a metal male: no added clearance. Confirmed twice with PLA, 0.4 mm nozzle and 0.12 mm layers: G 1/16 (28 TPI), and M7 x 0.75 drawn at nominal (6.19 mm hole, 7.00 mm root) on a metal male measuring 6.84 mm.
 - Printed male into a metal female (1/4"-20 UNC, 0.6 mm nozzle): 0.20 mm radial clearance worked; 0.10 and 0.15 did not go in properly.
 - Search in 0.1 mm steps near a value that almost works, not in 0.5 mm steps.
 
@@ -63,16 +63,21 @@ General:
 - No supports inside the thread.
 - Check that the filament profile matches the loaded filament. PLA printed with a PETG profile gave correct dimensions but heavy stringing.
 
-## Small threaded tips: do not print them alone
+## Alone or in a batch: it depends on the part
 
-A small hollow threaded tip at the top of a narrow part overheats when it is the only thing on the plate. The teeth melt and the diameter closes in.
+There is no fixed rule. Two parts with the same M7 x 0.75 thread behaved in opposite ways.
 
-Same M7 x 0.75 tip, 2.9 mm bore, 1.5 mm wall:
+A small hollow male tip (2.9 mm bore, 1.5 mm wall) at the top of a narrow part:
 
-- Printed alone: drawn at 6.85 mm, measured 6.12 mm. Thread and pitch were right, the diameter was 0.7 mm short.
+- Printed alone: drawn at 6.85 mm, measured 6.12 mm. Thread and pitch were right, the diameter was 0.7 mm short. The tip overheats when it is the only thing on the plate.
 - Printed three at a time: drawn at 6.95 mm, measured 6.92 mm.
 
-Print three or four copies together, or add a sacrificial tower of the same height. Do not compensate the model for a cooling problem.
+A female thread inside a 10 mm hex:
+
+- Printed three at a time: came out badly (cause not identified).
+- Printed alone: fitted perfectly.
+
+If a thin tip comes out undersize, print several copies or add a sacrificial tower before you touch the model. If a bulkier part comes out badly in a batch, try it alone.
 
 ## Small threads
 
