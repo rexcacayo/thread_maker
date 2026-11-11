@@ -23,7 +23,7 @@ Other things to check:
 
 When you cannot measure the root, print a tester instead of the whole part: a few short male stubs (a knob plus 4.5 mm of thread), each with a candidate thread and a number of notches to tell them apart. It prints in about 20 minutes.
 
-Example: an airbrush air inlet that downloadable models describe as G 1/16. The hole measured 6.15 mm with calipers, which is the minor diameter of M7 x 0.75, not G 1/16 (6.56 mm). A tester with both candidates confirmed M7 x 0.75. The printed male that fitted perfectly was 6.85 mm crest, 5.95 mm root (PLA, 0.4 mm nozzle, 0.12 mm layers).
+Example: an airbrush air inlet that downloadable models describe as G 1/16. The hole measured 6.15 mm with calipers, which is the minor diameter of M7 x 0.75, not G 1/16 (6.56 mm). A tester with both candidates confirmed M7 x 0.75. The final part uses a male drawn at 6.95 mm crest and 6.05 mm root; it measures 6.92 mm printed and fits perfectly (PLA, 0.4 mm nozzle, 0.12 mm layers). The metal male it replaces measures 6.84 mm.
 
 ## Clearance
 
@@ -62,6 +62,17 @@ General:
 - Thread axis vertical.
 - No supports inside the thread.
 - Check that the filament profile matches the loaded filament. PLA printed with a PETG profile gave correct dimensions but heavy stringing.
+
+## Small threaded tips: do not print them alone
+
+A small hollow threaded tip at the top of a narrow part overheats when it is the only thing on the plate. The teeth melt and the diameter closes in.
+
+Same M7 x 0.75 tip, 2.9 mm bore, 1.5 mm wall:
+
+- Printed alone: drawn at 6.85 mm, measured 6.12 mm. Thread and pitch were right, the diameter was 0.7 mm short.
+- Printed three at a time: drawn at 6.95 mm, measured 6.92 mm.
+
+Print three or four copies together, or add a sacrificial tower of the same height. Do not compensate the model for a cooling problem.
 
 ## Small threads
 
