@@ -116,7 +116,8 @@ def _desde_cilindro(cara, ci, p_ref):
     if en_min:
         fuera.scaleBy(-1)                 # "fuera" apunta alejandose del cilindro
     return {"o": o, "fuera": fuera, "cuerpo": cara.body, "modo": "agujero" if ci["agujero"] else "eje",
-            "radio": ci["R"], "largo": (ci["tmax"] - ci["tmin"]) * 10.0, "plana": True, "puntos": [o]}
+            "radio": ci["R"], "largo": (ci["tmax"] - ci["tmin"]) * 10.0, "plana": True, "puntos": [o],
+            "radios": [ci["R"] if ci["agujero"] else None]}
 
 
 def _proyectar(p, o, n):
@@ -137,6 +138,18 @@ def _punto_de(ent):
     return None
 
 
+def _radio_agujero(ent):
+    """Si la entidad es el borde circular de un agujero cilindrico, su radio en mm. Si no, None."""
+    ed = adsk.fusion.BRepEdge.cast(ent)
+    if not ed or not hasattr(ed.geometry, "radius"):
+        return None
+    for f in ed.faces:
+        ci = _cil_info(f)
+        if ci and ci["agujero"] and abs(ci["R"] - ed.geometry.radius * 10.0) < 1e-3:
+            return ci["R"]
+    return None
+
+
 def _colocacion(inputs):
     """Devuelve un dict: o (punto), fuera (direccion que se aleja de la pieza), cuerpo, modo
     ('libre', 'plano', 'curva', 'eje', 'agujero'), radio y largo sugeridos (mm), plana, puntos."""
@@ -145,7 +158,7 @@ def _colocacion(inputs):
         e = EJES[inputs.itemById("eje").selectedItem.name]
         o = adsk.core.Point3D.create(0, 0, 0)
         return {"o": o, "fuera": adsk.core.Vector3D.create(*e), "cuerpo": None, "modo": "libre",
-                "radio": None, "largo": None, "plana": True, "puntos": [o]}
+                "radio": None, "largo": None, "plana": True, "puntos": [o], "radios": [None]}
     sel = sp.selection(0)
     ent = sel.entity
     col = None
@@ -168,7 +181,7 @@ def _colocacion(inputs):
             n.normalize()
             o = sel.point
             return {"o": o, "fuera": n, "cuerpo": cara.body, "modo": "curva", "radio": None, "largo": None,
-                    "plana": False, "puntos": [o]}
+                    "plana": False, "puntos": [o], "radios": [None]}
     elif borde:
         g = borde.geometry
         centro = g.center
@@ -192,13 +205,16 @@ def _colocacion(inputs):
         o = pl.origin if centrar else _proyectar(sel.point, pl.origin, n)
         col = {"o": o, "fuera": n, "cuerpo": None, "modo": "plano", "radio": None, "largo": None, "plana": True}
     # puntos adicionales: una rosca en cada uno
-    pts = []
+    pts, radios = [], []
     spt = inputs.itemById("punto")
     for i in range(spt.selectionCount):
-        q = _punto_de(spt.selection(i).entity)
+        e = spt.selection(i).entity
+        q = _punto_de(e)
         if q:
             pts.append(_proyectar(q, col["o"], col["fuera"]))
+            radios.append(_radio_agujero(e))
     col["puntos"] = pts or [col["o"]]
+    col["radios"] = radios or [None]
     if pts:
         col["o"] = pts[0]
     return col
@@ -402,8 +418,10 @@ def _construir(design, v, col):
     r_ext = v["cresta"] / 2.0
     tl = design.timeline if design.designType == adsk.fusion.DesignTypes.ParametricDesignType else None
     ini = tl.markerPosition if tl else 0
-    for p in puntos:
-        if v["hembra"] and en_pieza:
+    for p, r_ag in zip(puntos, col["radios"]):
+        if v["hembra"] and en_pieza and r_ag and v["sentido"] > 0:
+            rosca_core.rosca_en_agujero(comp, cuerpo, r_ag, *medidas, origen=p, eje=eje, **comunes)
+        elif v["hembra"] and en_pieza:
             rosca_core.hembra_en(comp, cuerpo, *medidas, origen=p, eje=eje, extra=v["liso"],
                                  sobre=0.5 if col["plana"] else r_ext + 0.5, **comunes)
         elif v["hembra"]:

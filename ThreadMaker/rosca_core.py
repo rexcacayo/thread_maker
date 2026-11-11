@@ -321,3 +321,42 @@ def rosca_en_eje(comp, cuerpo, radio_eje, cresta_d, fondo_d, paso, angulo, largo
         herr = list(herr) + [bf.bodies.item(i) for i in range(bf.bodies.count)]
     _combinar(comp, cuerpo, herr, adsk.fusion.FeatureOperations.CutFeatureOperation)
     return cuerpo, pf
+
+
+def rosca_en_agujero(comp, cuerpo, radio_agujero, cresta_d, fondo_d, paso, angulo, largo, holgura=0.0, entradas=1,
+                     izquierda=False, chaflan=True, origen=None, eje=None):
+    """Rosca hembra tallada en un agujero cilindrico que ya existe en `cuerpo`.
+    origen: centro de la boca del agujero (cm). eje: direccion hacia dentro. radio_agujero en mm.
+    No rehace el taladro (restar un cilindro igual al que ya hay falla): resta solo el filete,
+    y ensancha el agujero unicamente si es mas estrecho que la rosca."""
+    pf = perfil(cresta_d, fondo_d, paso, angulo, holgura, hembra=True)
+    if radio_agujero >= pf["r_fondo"] - 0.05:
+        raise RoscaError("El agujero (%.2f mm) es demasiado grande para esta rosca (fondo %.2f mm)"
+                         % (2 * radio_agujero, 2 * pf["r_fondo"]))
+    falta = pf["r_boca"] - radio_agujero              # >0: hay que ensanchar el agujero
+    herr = cortar_rosca(comp, None, pf, 0.0, largo, entradas, izquierda, 0.0, sal_ini=True, sal_fin=False,
+                        herramienta=True, sobrante=max(0.3, falta + 0.3))
+    for h in herr:
+        _mover(comp, h, origen, eje)
+    tm = adsk.fusion.TemporaryBRepManager.get()
+    P = lambda z: adsk.core.Point3D.create(0, 0, z * MM)   # noqa: E731
+    temporales = []
+    r_final = max(radio_agujero, pf["r_boca"])
+    if falta > 0.02:
+        temporales.append(tm.createCylinderOrCone(P(-0.5), pf["r_boca"] * MM, P(largo), pf["r_boca"] * MM))
+    if chaflan:                                       # avellanado a 45 grados; acaba 0,05 dentro del hueco
+        r_cara = pf["r_fondo"] + 0.1
+        r_fin = max(0.05, r_final - 0.05)
+        temporales.append(tm.createCylinderOrCone(P(-0.5), (r_cara + 0.5) * MM, P(r_cara - r_fin), r_fin * MM))
+    if temporales:
+        m = _marco(origen, eje) if (origen is not None and eje is not None) else None
+        bf = comp.features.baseFeatures.add()
+        bf.startEdit()
+        for t in temporales:
+            if m is not None:
+                tm.transform(t, m)
+            comp.bRepBodies.add(t, bf)
+        bf.finishEdit()
+        herr = list(herr) + [bf.bodies.item(i) for i in range(bf.bodies.count)]
+    _combinar(comp, cuerpo, herr, adsk.fusion.FeatureOperations.CutFeatureOperation)
+    return cuerpo, pf
