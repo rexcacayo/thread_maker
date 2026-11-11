@@ -168,3 +168,96 @@ def rosca_hembra(comp, cresta_d, fondo_d, paso, angulo, largo, holgura=0.0, entr
     if nombre:
         cuerpo.name = nombre
     return cuerpo, pf
+
+
+# ---------------------------------------------------------------------------
+# Colocacion: la rosca se construye en el origen (eje Z) y despues se lleva
+# al plano elegido y, si se pide, se une o se resta al cuerpo de destino.
+# ---------------------------------------------------------------------------
+
+def _marco(origen, eje):
+    """Matriz que lleva el sistema de construccion (origen, eje Z) a un punto y una direccion (cm)."""
+    z = eje.copy()
+    z.normalize()
+    ref = adsk.core.Vector3D.create(1, 0, 0)
+    if abs(z.dotProduct(ref)) > 0.9:
+        ref = adsk.core.Vector3D.create(0, 1, 0)
+    y = z.crossProduct(ref)
+    y.normalize()
+    x = y.crossProduct(z)
+    x.normalize()
+    m = adsk.core.Matrix3D.create()
+    m.setWithCoordinateSystem(origen, x, y, z)
+    return m
+
+
+def _es_identidad(origen, eje):
+    z = eje.copy()
+    z.normalize()
+    return origen.distanceTo(adsk.core.Point3D.create(0, 0, 0)) < 1e-7 and z.dotProduct(adsk.core.Vector3D.create(0, 0, 1)) > 1 - 1e-9
+
+
+def _mover(comp, cuerpo, origen, eje):
+    if origen is None or eje is None or _es_identidad(origen, eje):
+        return None
+    col = adsk.core.ObjectCollection.create()
+    col.add(cuerpo)
+    mi = comp.features.moveFeatures.createInput2(col)
+    mi.defineAsFreeMove(_marco(origen, eje))
+    return comp.features.moveFeatures.add(mi)
+
+
+def _combinar(comp, destino, herramienta, operacion):
+    col = adsk.core.ObjectCollection.create()
+    col.add(herramienta)
+    ci = comp.features.combineFeatures.createInput(destino, col)
+    ci.operation = operacion
+    ci.isKeepToolBodies = False
+    return comp.features.combineFeatures.add(ci)
+
+
+def macho_en(comp, cresta_d, fondo_d, paso, angulo, largo, holgura=0.0, entradas=1, izquierda=False,
+             chaflan=True, origen=None, eje=None, unir_a=None, nombre=None):
+    """Rosca macho que sale de un plano. origen (Point3D, cm) y eje (Vector3D) situan la base.
+    Si unir_a es un cuerpo, la rosca se une a el y el surco muere en el plano (hombro)."""
+    pf = perfil(cresta_d, fondo_d, paso, angulo, holgura, hembra=False)
+    solape = 0.3 if unir_a else 0.0
+    ext = _cilindro(comp, pf["r_boca"], -solape, largo, 0.0, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+    cuerpo = ext.bodies.item(0)
+    if chaflan:
+        _chaflan_circulos(comp, cuerpo, pf["r_boca"], pf["prof"], z=(largo if unir_a else None))
+    cortar_rosca(comp, cuerpo, pf, 0.0, largo, entradas, izquierda, 0.0, sal_ini=not unir_a, sal_fin=True)
+    _mover(comp, cuerpo, origen, eje)
+    if unir_a:
+        _combinar(comp, unir_a, cuerpo, adsk.fusion.FeatureOperations.JoinFeatureOperation)
+        return unir_a, pf
+    if nombre:
+        cuerpo.name = nombre
+    return cuerpo, pf
+
+
+def hembra_en(comp, destino, cresta_d, fondo_d, paso, angulo, largo, holgura=0.0, entradas=1, izquierda=False,
+              chaflan=True, origen=None, eje=None):
+    """Taladro roscado dentro de `destino`. origen esta en la cara y eje apunta HACIA DENTRO del cuerpo.
+    Se construye el macho de la cavidad (agujero + filete) y se resta."""
+    pf = perfil(cresta_d, fondo_d, paso, angulo, holgura, hembra=True)
+    pm = perfil(cresta_d + 2 * holgura, fondo_d + 2 * holgura, paso, angulo, 0.0, hembra=False)
+    sobre = 0.5
+    ops = adsk.fusion.FeatureOperations
+    macho = _cilindro(comp, pm["r_boca"], -sobre, largo, 0.0, ops.NewBodyFeatureOperation).bodies.item(0)
+    cortar_rosca(comp, macho, pm, -sobre, largo, entradas, izquierda, 0.0, True, True)
+    if chaflan:
+        # avellanado a 45 grados: del diametro mayor en la cara al agujero
+        tm = adsk.fusion.TemporaryBRepManager.get()
+        r_cara = pm["r_boca"] + 0.1
+        cono = tm.createCylinderOrCone(
+            adsk.core.Point3D.create(0, 0, -sobre * MM), (r_cara + sobre) * MM,
+            adsk.core.Point3D.create(0, 0, (r_cara - pm["r_fondo"]) * MM), pm["r_fondo"] * MM)
+        bf = comp.features.baseFeatures.add()
+        bf.startEdit()
+        comp.bRepBodies.add(cono, bf)
+        bf.finishEdit()
+        _combinar(comp, macho, bf.bodies.item(0), ops.JoinFeatureOperation)
+    _mover(comp, macho, origen, eje)
+    _combinar(comp, destino, macho, ops.CutFeatureOperation)
+    return destino, pf
