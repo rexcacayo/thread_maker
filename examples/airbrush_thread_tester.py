@@ -10,7 +10,7 @@ import sys
 import adsk.core
 import adsk.fusion
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "core"))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ThreadMaker"))
 import rosca_core as rc  # noqa: E402
 
 MM = 0.1

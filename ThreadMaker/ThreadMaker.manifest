@@ -1,0 +1,13 @@
+{
+    "autodeskProduct": "Fusion360",
+    "type": "addin",
+    "id": "6f3d1a52-8c41-4b7e-9a0d-2e5b7c91d4a8",
+    "author": "Ricardo Lugaresi",
+    "description": {
+        "": "Printable threads with a custom profile: male and female, any pitch, angle and groove depth."
+    },
+    "version": "0.1.0",
+    "runOnStartup": false,
+    "supportedOS": "windows|mac",
+    "editEnabled": true
+}
