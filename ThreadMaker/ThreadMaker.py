@@ -1,6 +1,6 @@
 # Thread Maker - Fusion add-in.
 # Dialog to build a printable thread (male or female) from measurements.
-# Non-ASCII characters are written as \u escapes on purpose.
+# The dialog text is in Spanish for now; the file is UTF-8.
 import importlib
 import math
 import os

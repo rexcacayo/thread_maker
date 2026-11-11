@@ -2,7 +2,7 @@
 
 Fusion add-in that builds printable threads with a custom profile: fasteners and pipe threads, male and female, any pitch, angle and groove depth, with FDM clearance built in.
 
-> **Status: early development.** The geometry core works and is validated inside Fusion. There is no dialog or toolbar button yet, so today it is a Python module you call from a script. See [Roadmap](#roadmap).
+> **Status: early development.** The add-in has a working dialog that builds a male thread or a female test bushing at the origin. Placing threads on existing geometry is next. See [Roadmap](#roadmap).
 
 ## Why
 
@@ -30,14 +30,27 @@ Tested in Fusion with: M10x1.5 male and female, M6x1, BSW 1/2"-12 at 55°, a lef
 
 Sweeping a profile along a single helix in Fusion self-intersects after the first turn. The core avoids that by building two helices with `TemporaryBRepManager.createHelixWire`, one at the groove root (the sweep path) and one outside the material (the guide rail), and cutting the groove with a guided sweep. The cutting profile follows the flanks up to the surface and then continues straight, so it never overlaps the next turn.
 
-## Using it now
+## Install
 
-There is no installer yet. To try it:
+1. Download this repository and copy the `ThreadMaker` folder into Fusion's add-ins folder:
+   - Windows: `%APPDATA%\Autodesk\Autodesk Fusion 360\API\AddIns`
+   - macOS: `~/Library/Application Support/Autodesk/Autodesk Fusion 360/API/AddIns`
+2. In Fusion, open `Utilities > Add-Ins > Scripts and Add-Ins`, select **ThreadMaker** in the Add-Ins tab and press **Run**.
+3. The **Thread Maker** button appears in the `Solid > Create` panel.
 
-1. Clone or download this repository.
-2. In Fusion, open `Utilities > Add-Ins > Scripts and Add-Ins`, add `examples/airbrush_thread_tester.py` as a script and run it on an empty design.
+## Using the dialog
 
-Calling the core from your own script:
+1. Choose male or female.
+2. Pick a standard (metric, G pipe, UNC) to fill in the numbers, or leave it on free and type your own measurements.
+3. Set crest diameter, root diameter, pitch and flank angle. Presets hold the nominal male values.
+4. Set length, radial clearance, number of starts, handedness and chamfer.
+5. Read the info box: groove depth, crest and root flats, estimated time and printing warnings. OK is disabled when the profile is impossible.
+
+The thread is built at the origin of the active component, along Z. The female option builds a test bushing with the outer diameter you set.
+
+The dialog text is in Spanish for now.
+
+## Using the core from a script
 
 ```python
 import rosca_core as rc
@@ -47,7 +60,7 @@ body, profile = rc.rosca_macho(root_component, cresta_d=10.0, fondo_d=8.376,
                                paso=1.5, angulo=60, largo=20, holgura=0.2)
 ```
 
-Units are millimetres. The function and parameter names are currently in Spanish (`cresta` = crest, `fondo` = root, `paso` = pitch, `angulo` = angle, `largo` = length, `holgura` = clearance, `entradas` = starts, `izquierda` = left-hand). They will move to English before the first release.
+Units are millimetres. Function and parameter names are currently in Spanish (`cresta` = crest, `fondo` = root, `paso` = pitch, `angulo` = angle, `largo` = length, `holgura` = clearance, `entradas` = starts, `izquierda` = left-hand). They will move to English before the first release. `examples/airbrush_thread_tester.py` shows a thread that stops at a shoulder.
 
 ## Known limits
 
@@ -62,7 +75,9 @@ Units are millimetres. The function and parameter names are currently in Spanish
 2. Thread an existing cylindrical face, and cut a female thread inside an existing body.
 3. Recognise the thread from measurements (metric, UNC/UNF, BSW, BSP) and warn when nozzle or layer height cannot resolve the pitch.
 4. Pipe threads: parallel (G) and tapered (BSPT, NPT).
-5. Complete parts (hex nut, bolt, fittings), a clearance calibration test, in-dialog help, and the add-in dialog itself.
+5. Complete parts (hex nut, bolt, fittings), a clearance calibration test, in-dialog help, English UI.
+
+Done so far besides the core: the add-in dialog with presets, info box and warnings.
 
 ## Printing threads
 
