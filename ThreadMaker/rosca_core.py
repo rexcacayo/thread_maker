@@ -55,15 +55,18 @@ def perfil(cresta_d, fondo_d, paso, angulo, holgura=0.0, hembra=False, reparto_f
     }
 
 
-def cortar_rosca(comp, cuerpo, pf, z_ini, z_fin, entradas=1, izquierda=False, ox=0.0, sal_ini=True, sal_fin=True):
-    """Corta el surco helicoidal en `cuerpo`. Eje paralelo a Z pasando por (ox, 0). Devuelve las features."""
+def cortar_rosca(comp, cuerpo, pf, z_ini, z_fin, entradas=1, izquierda=False, ox=0.0, sal_ini=True, sal_fin=True,
+                 herramienta=False, sobrante=None):
+    """Corta el surco helicoidal en `cuerpo`. Eje paralelo a Z pasando por (ox, 0). Devuelve las features.
+    Con herramienta=True no corta nada: devuelve los cuerpos del surco, para restarlos despues donde haga falta."""
     tm = adsk.fusion.TemporaryBRepManager.get()
     paso = pf["paso"]
     avance = paso * entradas
     r_f = pf["r_fondo"]
     r_b = pf["r_boca"]
     # sobrante: macho hacia fuera (+), hembra hacia dentro (-)
-    r_s = r_b + (SOBRANTE if not pf["hembra"] else -SOBRANTE)
+    sob = SOBRANTE if sobrante is None else sobrante
+    r_s = r_b + (sob if not pf["hembra"] else -sob)
     if r_s <= 0.2:
         r_s = max(0.2, r_b * 0.5)
     # sal_ini / sal_fin: el surco sale por ese extremo (extremo libre). Si hay un hombro, se queda dentro.
@@ -107,10 +110,14 @@ def cortar_rosca(comp, cuerpo, pf, z_ini, z_fin, entradas=1, izquierda=False, ox
         ln = sk.sketchCurves.sketchLines
         for i in range(len(pts)):
             ln.addByTwoPoints(pts[i], pts[(i + 1) % len(pts)])
-        si = comp.features.sweepFeatures.createInput(sk.profiles.item(0), camino, adsk.fusion.FeatureOperations.CutFeatureOperation)
+        ops = adsk.fusion.FeatureOperations
+        si = comp.features.sweepFeatures.createInput(
+            sk.profiles.item(0), camino, ops.NewBodyFeatureOperation if herramienta else ops.CutFeatureOperation)
         si.guideRail = guia
-        si.participantBodies = [cuerpo]
-        feats.append(comp.features.sweepFeatures.add(si))
+        if not herramienta:
+            si.participantBodies = [cuerpo]
+        f = comp.features.sweepFeatures.add(si)
+        feats.append(f.bodies.item(0) if herramienta else f)
     for h in helices:
         h.isLightBulbOn = False
     return feats
@@ -209,7 +216,8 @@ def _mover(comp, cuerpo, origen, eje):
 
 def _combinar(comp, destino, herramienta, operacion):
     col = adsk.core.ObjectCollection.create()
-    col.add(herramienta)
+    for h in (herramienta if isinstance(herramienta, (list, tuple)) else [herramienta]):
+        col.add(h)
     ci = comp.features.combineFeatures.createInput(destino, col)
     ci.operation = operacion
     ci.isKeepToolBodies = False
@@ -217,16 +225,22 @@ def _combinar(comp, destino, herramienta, operacion):
 
 
 def macho_en(comp, cresta_d, fondo_d, paso, angulo, largo, holgura=0.0, entradas=1, izquierda=False,
-             chaflan=True, origen=None, eje=None, unir_a=None, nombre=None):
+             chaflan=True, origen=None, eje=None, unir_a=None, nombre=None, liso=0.0, solape=None):
     """Rosca macho que sale de un plano. origen (Point3D, cm) y eje (Vector3D) situan la base.
-    Si unir_a es un cuerpo, la rosca se une a el y el surco muere en el plano (hombro)."""
+    Si unir_a es un cuerpo, la rosca se une a el y el surco muere en el plano (hombro).
+    liso: tramo sin rosca entre el plano y el comienzo del filete.
+    solape: cuanto entra el macho en la pieza para unirse (mas en caras curvas)."""
     pf = perfil(cresta_d, fondo_d, paso, angulo, holgura, hembra=False)
-    solape = 0.3 if unir_a else 0.0
-    ext = _cilindro(comp, pf["r_boca"], -solape, largo, 0.0, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
+    if solape is None:
+        solape = 0.3
+    solape = solape if unir_a else 0.0
+    hombro = bool(unir_a) or liso > 0
+    alto = liso + largo
+    ext = _cilindro(comp, pf["r_boca"], -solape, alto, 0.0, adsk.fusion.FeatureOperations.NewBodyFeatureOperation)
     cuerpo = ext.bodies.item(0)
     if chaflan:
-        _chaflan_circulos(comp, cuerpo, pf["r_boca"], pf["prof"], z=(largo if unir_a else None))
-    cortar_rosca(comp, cuerpo, pf, 0.0, largo, entradas, izquierda, 0.0, sal_ini=not unir_a, sal_fin=True)
+        _chaflan_circulos(comp, cuerpo, pf["r_boca"], pf["prof"], z=(alto if hombro else None))
+    cortar_rosca(comp, cuerpo, pf, liso, alto, entradas, izquierda, 0.0, sal_ini=not hombro, sal_fin=True)
     _mover(comp, cuerpo, origen, eje)
     if unir_a:
         _combinar(comp, unir_a, cuerpo, adsk.fusion.FeatureOperations.JoinFeatureOperation)
@@ -237,15 +251,16 @@ def macho_en(comp, cresta_d, fondo_d, paso, angulo, largo, holgura=0.0, entradas
 
 
 def hembra_en(comp, destino, cresta_d, fondo_d, paso, angulo, largo, holgura=0.0, entradas=1, izquierda=False,
-              chaflan=True, origen=None, eje=None):
+              chaflan=True, origen=None, eje=None, extra=0.0, sobre=0.5):
     """Taladro roscado dentro de `destino`. origen esta en la cara y eje apunta HACIA DENTRO del cuerpo.
-    Se construye el macho de la cavidad (agujero + filete) y se resta."""
+    Se construye el macho de la cavidad (agujero + filete) y se resta.
+    extra: taladro liso mas alla del final de la rosca (taladro ciego mas profundo).
+    sobre: cuanto sobresale la herramienta por fuera de la cara (mas en caras curvas)."""
     pf = perfil(cresta_d, fondo_d, paso, angulo, holgura, hembra=True)
     pm = perfil(cresta_d + 2 * holgura, fondo_d + 2 * holgura, paso, angulo, 0.0, hembra=False)
-    sobre = 0.5
     ops = adsk.fusion.FeatureOperations
-    macho = _cilindro(comp, pm["r_boca"], -sobre, largo, 0.0, ops.NewBodyFeatureOperation).bodies.item(0)
-    cortar_rosca(comp, macho, pm, -sobre, largo, entradas, izquierda, 0.0, True, True)
+    macho = _cilindro(comp, pm["r_boca"], -sobre, largo + extra, 0.0, ops.NewBodyFeatureOperation).bodies.item(0)
+    cortar_rosca(comp, macho, pm, -sobre, largo, entradas, izquierda, 0.0, True, extra <= 0)
     if chaflan:
         # avellanado a 45 grados: del diametro mayor en la cara al agujero
         tm = adsk.fusion.TemporaryBRepManager.get()
@@ -261,3 +276,45 @@ def hembra_en(comp, destino, cresta_d, fondo_d, paso, angulo, largo, holgura=0.0
     _mover(comp, macho, origen, eje)
     _combinar(comp, destino, macho, ops.CutFeatureOperation)
     return destino, pf
+
+
+def rosca_en_eje(comp, cuerpo, radio_eje, cresta_d, fondo_d, paso, angulo, largo, holgura=0.0, entradas=1,
+                 izquierda=False, chaflan=True, origen=None, eje=None):
+    """Rosca macho tallada en un eje cilindrico que ya existe en `cuerpo`.
+    origen: centro del extremo libre (cm). eje: direccion hacia dentro del eje. radio_eje en mm.
+    No rehace el eje: resta el surco, y lo que sobre de diametro, asi se conserva lo demas (taladros, chaveteros)."""
+    pf = perfil(cresta_d, fondo_d, paso, angulo, holgura, hembra=False)
+    if pf["r_boca"] > radio_eje + 1e-4:
+        raise RoscaError("La cresta pedida (%.2f mm) es mayor que el eje (%.2f mm)" % (2 * pf["r_boca"], 2 * radio_eje))
+    resto = radio_eje - pf["r_boca"]                  # material a quitar para llegar a la cresta
+    herr = cortar_rosca(comp, None, pf, 0.0, largo, entradas, izquierda, 0.0, sal_ini=True, sal_fin=False,
+                        herramienta=True, sobrante=resto + 0.3)
+    for h in herr:
+        _mover(comp, h, origen, eje)
+    tm = adsk.fusion.TemporaryBRepManager.get()
+    dif = adsk.fusion.BooleanTypes.DifferenceBooleanType
+    P = lambda z: adsk.core.Point3D.create(0, 0, z * MM)   # noqa: E731
+    temporales = []
+    R = radio_eje + 1.0
+    if resto > 1e-3:                                  # tubo que rebaja el eje hasta la cresta
+        tubo = tm.createCylinderOrCone(P(-0.2), R * MM, P(largo), R * MM)
+        tm.booleanOperation(tubo, tm.createCylinderOrCone(P(-1.0), pf["r_boca"] * MM, P(largo + 1.0), pf["r_boca"] * MM), dif)
+        temporales.append(tubo)
+    if chaflan:                                       # anillo que deja un cono de entrada a 45 grados
+        prof = pf["prof"]
+        z0 = -min(0.5, max(0.0, pf["r_boca"] - prof - 0.05))
+        anillo = tm.createCylinderOrCone(P(z0), R * MM, P(prof), R * MM)
+        tm.booleanOperation(anillo, tm.createCylinderOrCone(P(z0), (pf["r_boca"] - prof + z0) * MM, P(prof), pf["r_boca"] * MM), dif)
+        temporales.append(anillo)
+    if temporales:
+        m = _marco(origen, eje) if (origen is not None and eje is not None) else None
+        bf = comp.features.baseFeatures.add()
+        bf.startEdit()
+        for t in temporales:
+            if m is not None:
+                tm.transform(t, m)
+            comp.bRepBodies.add(t, bf)
+        bf.finishEdit()
+        herr = list(herr) + [bf.bodies.item(i) for i in range(bf.bodies.count)]
+    _combinar(comp, cuerpo, herr, adsk.fusion.FeatureOperations.CutFeatureOperation)
+    return cuerpo, pf
